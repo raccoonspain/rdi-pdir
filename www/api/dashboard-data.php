@@ -25,19 +25,18 @@ const DASHBOARD_MODULE_ENTITY_TYPE_ID    = 1050;
 const DASHBOARD_PAY_ENTITY_TYPE_ID       = 1046;
 
 /**
- * Названия и порядок стадий — из /source/RDI *.md (таблицы «Технический
- * код»). Цвета (`color`) — ПЛЕЙСХОЛДЕР (перенесены по смыслу с воронки
- * первого клиента: чёрный→жёлтый→голубой→зелёный→ярко-зелёный/красный),
- * не сняты живым REST-вызовом с `ooordi.bitrix24.ru` — на портале
- * `alfa-prj.bitrix24.ru` для этого был сделан `crm.status.list` (D-007),
- * здесь так же нужно сделать после install-flow. См. следующий шаг в
- * docs/state.md.
+ * Названия, порядок и цвета стадий — сняты живым REST-вызовом
+ * `crm.status.list(filter: {ENTITY_ID: "DYNAMIC_1038_STAGE_14"})` на портале
+ * `ooordi.bitrix24.ru` 2026-07-22, см. D-004 в docs/decisions.md. Совпадают
+ * 1:1 с воронкой в настройках Б24 (в отличие от изначальных плейсхолдеров —
+ * подтвердилось совпадение всех стадий, кроме `UC_MVRPFS`, где реальный
+ * цвет жёлтый, не зелёный).
  */
 const DASHBOARD_DEAL_STAGES = [
     'NEW'         => ['order' => 1, 'name' => 'Подписание',    'color' => '#000000'],
     'PREPARATION' => ['order' => 2, 'name' => 'Авансирование', 'color' => '#fff300'],
     'CLIENT'      => ['order' => 3, 'name' => 'Работа',        'color' => '#10e5fc'],
-    'UC_MVRPFS'   => ['order' => 4, 'name' => 'Закрытие',      'color' => '#00a74c'],
+    'UC_MVRPFS'   => ['order' => 4, 'name' => 'Закрытие',      'color' => '#fff300'],
     'SUCCESS'     => ['order' => 5, 'name' => 'Завершено',     'color' => '#00ff00'],
     'FAIL'        => ['order' => 6, 'name' => 'Разрыв',        'color' => '#ff0000'],
 ];
