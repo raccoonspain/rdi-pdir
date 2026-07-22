@@ -34,6 +34,18 @@ ssum: Хронология того, что уже сделано — новое
 
 <!-- Новые записи добавляй СВЕРХУ, сразу под этой строкой -->
 
+## 2026-07-22 — Первый деплой на rub24
+- `bash deploy.sh`: rsync `www/` → `/var/www/b24/rdi-pdir/`, `env.php` создан
+  автоматически с верными `APP_URL`/`APP_PATH`/`DATA_ROOT`
+- Добавлен блок `/rdi-pdir` в `/etc/caddy/Caddyfile` на rub24 (по образцу
+  `ap-pdir`), конфиг провалидирован (`caddy validate`) и перезагружен
+  (`caddy reload`) — файл правился напрямую по SSH, он принадлежит `deploy`
+- Прод отвечает: `curl` на `https://rub24.blackboxbegin.space/rdi-pdir/index.php`
+  → `HTTP 403` — ожидаемо (session-gate REFERER-fence блокирует прямой заход
+  вне портала/self-APP_URL), подтверждает что PHP-FPM и роутинг рабочие
+- Осталось: зарегистрировать local-app на `ooordi.bitrix24.ru`, вписать
+  `B24_CLIENT_ID`/`B24_CLIENT_SECRET` в `env.php` на сервере, install-flow
+
 ## 2026-07-22 — Бизнес-код переписан под сущности «АУП»
 - Пользователь положил в `/source` актуальные RDI-документы с полными кодами
   полей (UF_CRM_*) и описанием бизнес-процессов — составлены самим
