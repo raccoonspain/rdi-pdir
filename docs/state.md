@@ -45,33 +45,36 @@ ID/коды полей.
 
 ## Сейчас в работе
 
-GitHub-репозиторий привязан (`origin` → `git@github.com:raccoonspain/rdi-pdir.git`,
-ветка `master` запушена). Деплоить всё ещё рано (см. D-001) — остался перенос
-бизнес-кода под сущности `ooordi.bitrix24.ru`. `www/api/dashboard-data.php`/
-`task-create.php` всё ещё завязаны на entityTypeId/UF-коды первого клиента
-(«Альфа») — их надо переписать под `/source/RDI *.md` (entityTypeId
-1038/1042/1050/1046 уже известны, но конкретные UF-коды полей нужно
-переснять живыми REST-вызовами).
+Бизнес-код переписан под сущности «АУП» (`www/api/dashboard-data.php`,
+`www/api/task-create.php`, `www/js/app.js`) — entityTypeId и все UF-коды
+полей взяты из `/source/RDI *.md` (составлены разработчиком портала при
+создании смарт-процессов, не сняты живым REST — см. D-001). GitHub-репозиторий
+привязан (`origin` → `git@github.com:raccoonspain/rdi-pdir.git`, `master`
+запушен). Оба блокера из D-001 закрыты — можно деплоить.
+
+Один открытый хвост: цвета стадий (`color` в `DASHBOARD_*_STAGES`) —
+плейсхолдеры, перенесённые по смыслу с воронки первого клиента, не сняты
+`crm.status.list` с `ooordi.bitrix24.ru` (это можно сделать только после
+install-flow, когда появится REST-доступ). Не блокирует деплой — влияет
+только на точность цвета плашек в UI.
 
 ## Следующие шаги
 
-- [ ] Переснять реальные UF-коды полей сущностей (Сделка/Этап/Модуль/Оплата)
-      живыми REST-вызовами (`crm.item.fields?entityTypeId=...`) на портале
-      `ooordi.bitrix24.ru` — entityTypeId уже известны из `/source`, но
-      конкретные UF-коды нужно снимать заново, не по аналогии с «Альфа»
-- [ ] Переписать `www/api/dashboard-data.php`/`task-create.php` под новые
-      entityTypeId/UF-коды
+- [x] Переписать `www/api/dashboard-data.php`/`task-create.php`/`www/js/app.js`
+      под сущности «АУП» (entityTypeId 1038/1042/1050/1046 + UF-коды из
+      `/source/RDI *.md`) — сделано 2026-07-22
 - [x] Получить ссылку на GitHub-репозиторий, привязать `origin` — сделано 2026-07-22
 - [ ] `bash deploy.sh` на rub24 (slug `rdi-pdir`), завести Caddy-блок `/rdi-pdir`
 - [ ] Зарегистрировать local-app на портале `ooordi.bitrix24.ru` (см. `how-to-link.md`),
       вписать `B24_CLIENT_ID`/`SECRET` в `env.php` на сервере
 - [ ] Пройти install-flow, подтвердить токены
+- [ ] После установки — сверить реальные UF-коды живым `crm.item.fields` (на
+      случай расхождений с `/source`) и снять реальные цвета стадий
+      `crm.status.list`, заменить плейсхолдеры в `DASHBOARD_*_STAGES`
 
 ## Открытые вопросы / блокеры
 
-Один блокер перед деплоем (см. D-001): бизнес-код ещё под сущности первого
-клиента, нужны реальные UF-коды нового портала (REST-доступ к
-`ooordi.bitrix24.ru`, чтобы вызвать `crm.item.fields`).
+Нет блокеров — можно деплоить (`bash deploy.sh` → регистрация local-app).
 
 ## Карта проекта
 

@@ -7,39 +7,49 @@ require_once __DIR__ . '/b24.php';
  * Данные пульта руководителя: сделка → этапы (Milestone) → модули (Module),
  * с готовыми агрегатами и индикаторами. Один проход — весь REST через
  * batch(), без REST-вызовов при раскрытии строк на фронте.
- * См. docs/superpowers/specs/2026-07-13-pult-rukovoditelya-design.md.
+ * См. docs/prev-project/superpowers/specs/2026-07-13-pult-rukovoditelya-design.md
+ * (спека первого проекта — дизайн тот же, сущности другие).
  *
  * Поля читаются через crm.item.list — select camelCase, см.
  * rules/rule-crm-item-camelcase-select.md.
+ *
+ * Сущности и коды полей — клиент «АУП», портал ooordi.bitrix24.ru,
+ * см. /source/RDI Сделки.md, RDI Этапы.md, RDI Модули.md, RDI Оплаты.md
+ * (документы составлены разработчиком портала при создании смарт-процессов —
+ * не переснимались живыми REST-вызовами, см. D-001 в docs/decisions.md).
  */
 
-const DASHBOARD_DEAL_ENTITY_TYPE_ID      = 1050;
-const DASHBOARD_MILESTONE_ENTITY_TYPE_ID = 1054;
-const DASHBOARD_MODULE_ENTITY_TYPE_ID    = 1062;
-const DASHBOARD_PAY_ENTITY_TYPE_ID       = 1058;
+const DASHBOARD_DEAL_ENTITY_TYPE_ID      = 1038;
+const DASHBOARD_MILESTONE_ENTITY_TYPE_ID = 1042;
+const DASHBOARD_MODULE_ENTITY_TYPE_ID    = 1050;
+const DASHBOARD_PAY_ENTITY_TYPE_ID       = 1046;
 
 /**
- * Цвета (`COLOR`) — не придуманы, а сняты с реального портала через
- * `crm.status.list(filter: {ENTITY_ID: "DYNAMIC_<entityTypeId>_STAGE_<categoryId>"})`,
- * см. D-007 в docs/decisions.md. Совпадают 1:1 с воронкой в настройках Б24.
+ * Названия и порядок стадий — из /source/RDI *.md (таблицы «Технический
+ * код»). Цвета (`color`) — ПЛЕЙСХОЛДЕР (перенесены по смыслу с воронки
+ * первого клиента: чёрный→жёлтый→голубой→зелёный→ярко-зелёный/красный),
+ * не сняты живым REST-вызовом с `ooordi.bitrix24.ru` — на портале
+ * `alfa-prj.bitrix24.ru` для этого был сделан `crm.status.list` (D-007),
+ * здесь так же нужно сделать после install-flow. См. следующий шаг в
+ * docs/state.md.
  */
 const DASHBOARD_DEAL_STAGES = [
-    'NEW'         => ['order' => 1, 'name' => 'Подписание',     'color' => '#000000'],
-    'UC_WRET3K'   => ['order' => 2, 'name' => 'Авансирование',  'color' => '#fff300'],
-    'CLIENT'      => ['order' => 3, 'name' => 'Работа',         'color' => '#10e5fc'],
-    'PREPARATION' => ['order' => 4, 'name' => 'Закрытие',       'color' => '#00a74c'],
-    'SUCCESS'     => ['order' => 5, 'name' => 'Завершено',      'color' => '#00ff00'],
-    'FAIL'        => ['order' => 6, 'name' => 'Разрыв',         'color' => '#ff0000'],
+    'NEW'         => ['order' => 1, 'name' => 'Подписание',    'color' => '#000000'],
+    'PREPARATION' => ['order' => 2, 'name' => 'Авансирование', 'color' => '#fff300'],
+    'CLIENT'      => ['order' => 3, 'name' => 'Работа',        'color' => '#10e5fc'],
+    'UC_MVRPFS'   => ['order' => 4, 'name' => 'Закрытие',      'color' => '#00a74c'],
+    'SUCCESS'     => ['order' => 5, 'name' => 'Завершено',     'color' => '#00ff00'],
+    'FAIL'        => ['order' => 6, 'name' => 'Разрыв',        'color' => '#ff0000'],
 ];
-const DASHBOARD_DEAL_EARLY_STAGES  = ['NEW', 'UC_WRET3K'];
+const DASHBOARD_DEAL_EARLY_STAGES  = ['NEW', 'PREPARATION'];
 const DASHBOARD_DEAL_CLOSED_STAGES = ['SUCCESS', 'FAIL'];
 
 const DASHBOARD_MILESTONE_STAGES = [
     'NEW'         => ['name' => 'Ожидание начала',        'color' => '#000000'],
     'PREPARATION' => ['name' => 'Авансирование',           'color' => '#fff300'],
     'CLIENT'      => ['name' => 'В работе',                'color' => '#10e5fc'],
-    'UC_OLAUWC'   => ['name' => 'Передача результатов',    'color' => '#00a74c'],
-    'UC_PH2XT1'   => ['name' => 'Оплата',                  'color' => '#fff300'],
+    'UC_6GQB4S'   => ['name' => 'Передача результатов',    'color' => '#00a74c'],
+    'UC_E95N4X'   => ['name' => 'Оплата',                  'color' => '#fff300'],
     'SUCCESS'     => ['name' => 'Завершено',               'color' => '#00ff00'],
     'FAIL'        => ['name' => 'Разрыв',                  'color' => '#ff0000'],
 ];
@@ -47,21 +57,21 @@ const DASHBOARD_MILESTONE_SHORT_LABELS = [
     'NEW'         => 'ожид',
     'PREPARATION' => 'аванс',
     'CLIENT'      => 'раб',
-    'UC_OLAUWC'   => 'передача',
-    'UC_PH2XT1'   => 'опл',
+    'UC_6GQB4S'   => 'передача',
+    'UC_E95N4X'   => 'опл',
     'SUCCESS'     => 'заверш',
     'FAIL'        => 'разрыв',
 ];
 const DASHBOARD_MILESTONE_CLOSED_STAGES = ['SUCCESS', 'FAIL'];
-const DASHBOARD_MILESTONE_PAYMENT_STAGE = 'UC_PH2XT1';
+const DASHBOARD_MILESTONE_PAYMENT_STAGE = 'UC_E95N4X';
 
 const DASHBOARD_MODULE_STAGES = [
     'NEW'         => ['name' => 'Запуск',         'color' => '#000000'],
     'PREPARATION' => ['name' => 'Рассмотрение',   'color' => '#88b9ff'],
     'CLIENT'      => ['name' => 'Разработка',     'color' => '#10e5fc'],
-    'UC_WI1QUU'   => ['name' => 'Корректировка',  'color' => '#ace9fb'],
-    'UC_MTO1QJ'   => ['name' => 'Ожидание',       'color' => '#fff300'],
-    'UC_DFWFJU'   => ['name' => 'Согласование',   'color' => '#00a74c'],
+    'UC_AJTX21'   => ['name' => 'Корректировка',  'color' => '#ace9fb'],
+    'UC_PM02XS'   => ['name' => 'Ожидание',       'color' => '#fff300'],
+    'UC_M71TWU'   => ['name' => 'Согласование',   'color' => '#00a74c'],
     'SUCCESS'     => ['name' => 'Согласовано',    'color' => '#00ff00'],
     'FAIL'        => ['name' => 'Аннулировано',   'color' => '#ff0000'],
 ];
@@ -69,30 +79,31 @@ const DASHBOARD_MODULE_SHORT_LABELS = [
     'NEW'         => 'запуск',
     'PREPARATION' => 'рассм',
     'CLIENT'      => 'разр',
-    'UC_WI1QUU'   => 'кор',
-    'UC_MTO1QJ'   => 'ожид',
-    'UC_DFWFJU'   => 'согл',
+    'UC_AJTX21'   => 'кор',
+    'UC_PM02XS'   => 'ожид',
+    'UC_M71TWU'   => 'согл',
     'SUCCESS'     => 'готово',
     'FAIL'        => 'аннул',
 ];
 
 /**
- * Плановая дата завершения стадии Модуля — см. /source/АП Module.md,
- * названия полей 1:1 совпадают с русским названием стадии. Для SUCCESS/FAIL
- * (терминальные) поля-даты нет — не отслеживаем срыв на этих стадиях.
+ * Плановая дата завершения стадии Модуля — см. /source/RDI Модули.md,
+ * названия полей 1:1 совпадают с русским названием стадии (Запуск →
+ * UF_CRM_14_MOD_RUN и т.д.). Для SUCCESS/FAIL (терминальные) поля-даты
+ * нет — не отслеживаем срыв на этих стадиях.
  */
 const DASHBOARD_MODULE_STAGE_DATE_FIELD = [
-    'NEW'         => 'ufCrm19ModRun',
-    'PREPARATION' => 'ufCrm19ModCheck',
-    'CLIENT'      => 'ufCrm19ModCreate',
-    'UC_WI1QUU'   => 'ufCrm19ModEdit',
-    'UC_MTO1QJ'   => 'ufCrm19ModWait',
-    'UC_DFWFJU'   => 'ufCrm19ModApprove',
+    'NEW'         => 'ufCrm14ModRun',
+    'PREPARATION' => 'ufCrm14ModCheck',
+    'CLIENT'      => 'ufCrm14ModCreate',
+    'UC_AJTX21'   => 'ufCrm14ModEdit',
+    'UC_PM02XS'   => 'ufCrm14ModWait',
+    'UC_M71TWU'   => 'ufCrm14ModApprove',
 ];
 
-const DASHBOARD_PAY_SENT_STAGE = 'UC_4NSTRS';
+const DASHBOARD_PAY_SENT_STAGE = 'UC_83O6WQ';
 
-/** `STAGE_ID` вида `DT1050_21:NEW` → бизнес-код стадии `NEW`. */
+/** `STAGE_ID` вида `DT1038_14:NEW` → бизнес-код стадии `NEW`. */
 function dashboardStageCode(?string $stageId): string {
     $stageId = (string)$stageId;
     $pos = strrpos($stageId, ':');
@@ -127,13 +138,16 @@ function dashboardModuleLagDays(string $modStageCode, array $mod, ?string $today
  * Общая документация Б24 описывает только формат `{PREFIX}_{ID}` (например
  * "CO_123" для компании) — он актуален, когда поле разрешает НЕСКОЛЬКО типов
  * CRM-сущностей (settings с несколькими `Y`). Но живая проверка через REST
- * на портале alfa-prj.bitrix24.ru (`crm.item.fields` + `crm.item.list`)
- * показала: если поле в настройках разрешает ровно один тип привязки
- * (например settings={"COMPANY":"Y", остальные null}), Б24 сериализует
- * значение как ГОЛОЕ числовое ID-значение без префикса (например "5"), а не
- * "CO_5". Этот нюанс нигде в общей документации не описан. Поэтому парсер
- * должен понимать оба формата. PREFIX не проверяется — поле может содержать
- * любой тип привязки, парсинг не должен падать при смене типа.
+ * на портале первого клиента alfa-prj.bitrix24.ru (`crm.item.fields` +
+ * `crm.item.list`) показала: если поле в настройках разрешает ровно один тип
+ * привязки (например settings={"COMPANY":"Y", остальные null}), Б24
+ * сериализует значение как ГОЛОЕ числовое ID-значение без префикса
+ * (например "5"), а не "CO_5". Этот нюанс нигде в общей документации не
+ * описан. Парсер понимает оба формата, поэтому не требует переверификации
+ * для `ooordi.bitrix24.ru` — но settings поля `UF_CRM_8_CUSTOMER_COMP`
+ * (сколько типов привязки разрешено) там ещё не проверялись живым REST.
+ * PREFIX не проверяется — поле может содержать любой тип привязки, парсинг
+ * не должен падать при смене типа.
  */
 function dashboardParseCrmBindingId(?string $value): ?int {
     $value = (string)$value;
@@ -301,7 +315,7 @@ function dashboardEmptyResult(string $preset): array {
  * $preset — 'active' (дефолт, все стадии кроме Завершено/Разрыв) / 'all' / 'closed'.
  */
 function fetchDashboardData(B24 $b24, string $preset = 'active'): array {
-    $dealSelect = ['id', 'title', 'stageId', 'ufCrm13OCode', 'ufCrm13OCost', 'ufCrm13OBalance', 'ufCrm13CustomerComp', 'assignedById', 'ufCrm13OSname'];
+    $dealSelect = ['id', 'title', 'stageId', 'ufCrm8OCode', 'ufCrm8OCost', 'ufCrm8OBalance', 'ufCrm8CustomerComp', 'assignedById', 'ufCrm8OSname'];
     $allDeals = dashboardFetchAllItems($b24, DASHBOARD_DEAL_ENTITY_TYPE_ID, [], $dealSelect);
     $users = dashboardFetchAllActiveUsers($b24);
 
@@ -317,23 +331,23 @@ function fetchDashboardData(B24 $b24, string $preset = 'active'): array {
 
     $dealIds = array_map(fn($d) => (int)$d['id'], $deals);
 
-    $milestoneSelect = ['id', 'title', 'stageId', 'parentId1050', 'ufCrm15MstNum', 'ufCrm15MstCost', 'ufCrm15MstContrPlan', 'ufCrm15MstActLast', 'ufCrm15MstActDate'];
-    $milestones = dashboardFetchAllItems($b24, DASHBOARD_MILESTONE_ENTITY_TYPE_ID, ['parentId1050' => $dealIds], $milestoneSelect);
+    $milestoneSelect = ['id', 'title', 'stageId', 'parentId1038', 'ufCrm10MstNum', 'ufCrm10MstCost', 'ufCrm10MstContrPlan', 'ufCrm10MstActLast', 'ufCrm10MstActDate'];
+    $milestones = dashboardFetchAllItems($b24, DASHBOARD_MILESTONE_ENTITY_TYPE_ID, ['parentId1038' => $dealIds], $milestoneSelect);
 
-    $moduleSelect = ['id', 'title', 'stageId', 'parentId1050', 'parentId1054', 'ufCrm19ModNum', 'ufCrm19ModCreatorUser', 'ufCrm19ModActivTxtlast', 'ufCrm19ModActivDlast', 'ufCrm19ModRun', 'ufCrm19ModCheck', 'ufCrm19ModCreate', 'ufCrm19ModEdit', 'ufCrm19ModWait', 'ufCrm19ModApprove'];
-    $modules = dashboardFetchAllItems($b24, DASHBOARD_MODULE_ENTITY_TYPE_ID, ['parentId1050' => $dealIds], $moduleSelect);
+    $moduleSelect = ['id', 'title', 'stageId', 'parentId1038', 'parentId1042', 'ufCrm14ModNum', 'ufCrm14ModCreatorUser', 'ufCrm14ModActivTxtlast', 'ufCrm14ModActivDlast', 'ufCrm14ModRun', 'ufCrm14ModCheck', 'ufCrm14ModCreate', 'ufCrm14ModEdit', 'ufCrm14ModWait', 'ufCrm14ModApprove'];
+    $modules = dashboardFetchAllItems($b24, DASHBOARD_MODULE_ENTITY_TYPE_ID, ['parentId1038' => $dealIds], $moduleSelect);
 
     $milestoneIds = array_map(fn($m) => (int)$m['id'], $milestones);
-    $paySelect = ['id', 'stageId', 'parentId1054'];
-    $pays = $milestoneIds ? dashboardFetchAllItems($b24, DASHBOARD_PAY_ENTITY_TYPE_ID, ['parentId1054' => $milestoneIds], $paySelect) : [];
+    $paySelect = ['id', 'stageId', 'parentId1042'];
+    $pays = $milestoneIds ? dashboardFetchAllItems($b24, DASHBOARD_PAY_ENTITY_TYPE_ID, ['parentId1042' => $milestoneIds], $paySelect) : [];
 
-    $milestonesByDeal   = dashboardGroupBy($milestones, 'parentId1050');
-    $modulesByMilestone = dashboardGroupBy($modules, 'parentId1054');
-    $paysByMilestone    = dashboardGroupBy($pays, 'parentId1054');
+    $milestonesByDeal   = dashboardGroupBy($milestones, 'parentId1038');
+    $modulesByMilestone = dashboardGroupBy($modules, 'parentId1042');
+    $paysByMilestone    = dashboardGroupBy($pays, 'parentId1042');
 
-    $userIds = array_merge(array_column($modules, 'ufCrm19ModCreatorUser'), array_column($deals, 'assignedById'));
+    $userIds = array_merge(array_column($modules, 'ufCrm14ModCreatorUser'), array_column($deals, 'assignedById'));
     $developerNames = dashboardResolveUserNames($b24, $userIds);
-    $companyIds = array_map(fn($d) => dashboardParseCrmBindingId($d['ufCrm13CustomerComp'] ?? null), $deals);
+    $companyIds = array_map(fn($d) => dashboardParseCrmBindingId($d['ufCrm8CustomerComp'] ?? null), $deals);
     $companyNames = dashboardResolveCompanyNames($b24, $companyIds);
 
     $kpi = [
@@ -366,7 +380,7 @@ function fetchDashboardData(B24 $b24, string $preset = 'active'): array {
             $mAwaitingPayment = false;
 
             if ($mOpen) {
-                $lag = $m['ufCrm15MstContrPlan'] ?? null;
+                $lag = $m['ufCrm10MstContrPlan'] ?? null;
                 if ($lag !== null) {
                     $lag = (float)$lag;
                     if ($worstLagDays === null || $lag < $worstLagDays) $worstLagDays = $lag;
@@ -396,29 +410,29 @@ function fetchDashboardData(B24 $b24, string $preset = 'active'): array {
                 }
                 $moduleRows[] = [
                     'id'            => (int)$mod['id'],
-                    'number'        => $mod['ufCrm19ModNum'] ?? null,
+                    'number'        => $mod['ufCrm14ModNum'] ?? null,
                     'title'         => $mod['title'] ?? '',
                     'stageCode'     => $modStageCode,
                     'stageName'     => DASHBOARD_MODULE_STAGES[$modStageCode]['name'] ?? $modStageCode,
                     'stageColor'    => DASHBOARD_MODULE_STAGES[$modStageCode]['color'] ?? '#888888',
-                    'developer'     => $developerNames[(string)($mod['ufCrm19ModCreatorUser'] ?? '')] ?? null,
-                    'lastActivity'  => $mod['ufCrm19ModActivTxtlast'] ?? null,
-                    'lastActivityAt'=> $mod['ufCrm19ModActivDlast'] ?? null,
+                    'developer'     => $developerNames[(string)($mod['ufCrm14ModCreatorUser'] ?? '')] ?? null,
+                    'lastActivity'  => $mod['ufCrm14ModActivTxtlast'] ?? null,
+                    'lastActivityAt'=> $mod['ufCrm14ModActivDlast'] ?? null,
                     'lagDays'       => $modLagDays,
                 ];
             }
 
             $milestoneRows[] = [
                 'id'             => (int)$m['id'],
-                'number'         => $m['ufCrm15MstNum'] ?? null,
+                'number'         => $m['ufCrm10MstNum'] ?? null,
                 'title'          => $m['title'] ?? '',
                 'stageCode'      => $mStageCode,
                 'stageName'      => DASHBOARD_MILESTONE_STAGES[$mStageCode]['name'] ?? $mStageCode,
                 'stageColor'     => DASHBOARD_MILESTONE_STAGES[$mStageCode]['color'] ?? '#888888',
-                'cost'           => isset($m['ufCrm15MstCost']) ? (float)$m['ufCrm15MstCost'] : null,
-                'lagDays'        => isset($m['ufCrm15MstContrPlan']) ? (float)$m['ufCrm15MstContrPlan'] : null,
-                'lastActivity'   => $m['ufCrm15MstActLast'] ?? null,
-                'lastActivityAt' => $m['ufCrm15MstActDate'] ?? null,
+                'cost'           => isset($m['ufCrm10MstCost']) ? (float)$m['ufCrm10MstCost'] : null,
+                'lagDays'        => isset($m['ufCrm10MstContrPlan']) ? (float)$m['ufCrm10MstContrPlan'] : null,
+                'lastActivity'   => $m['ufCrm10MstActLast'] ?? null,
+                'lastActivityAt' => $m['ufCrm10MstActDate'] ?? null,
                 'modules'        => $moduleRows,
                 'moduleLag'      => [
                     'onTrack'    => $mOnTrack,
@@ -434,17 +448,17 @@ function fetchDashboardData(B24 $b24, string $preset = 'active'): array {
 
         $dealRows[] = [
             'id'               => (int)$deal['id'],
-            'code'             => $deal['ufCrm13OCode'] ?? '',
+            'code'             => $deal['ufCrm8OCode'] ?? '',
             'title'            => $deal['title'] ?? '',
             'stageCode'        => $stageCode,
             'stageName'        => DASHBOARD_DEAL_STAGES[$stageCode]['name'] ?? $stageCode,
             'stageOrder'       => DASHBOARD_DEAL_STAGES[$stageCode]['order'] ?? 99,
             'stageColor'       => DASHBOARD_DEAL_STAGES[$stageCode]['color'] ?? '#888888',
-            'cost'             => isset($deal['ufCrm13OCost']) ? (float)$deal['ufCrm13OCost'] : 0.0,
-            'balance'          => isset($deal['ufCrm13OBalance']) ? (float)$deal['ufCrm13OBalance'] : 0.0,
-            'customerName'     => ($cid = dashboardParseCrmBindingId($deal['ufCrm13CustomerComp'] ?? null)) !== null ? ($companyNames[(string)$cid] ?? null) : null,
+            'cost'             => isset($deal['ufCrm8OCost']) ? (float)$deal['ufCrm8OCost'] : 0.0,
+            'balance'          => isset($deal['ufCrm8OBalance']) ? (float)$deal['ufCrm8OBalance'] : 0.0,
+            'customerName'     => ($cid = dashboardParseCrmBindingId($deal['ufCrm8CustomerComp'] ?? null)) !== null ? ($companyNames[(string)$cid] ?? null) : null,
             'assigneeName'     => isset($deal['assignedById']) ? ($developerNames[(string)$deal['assignedById']] ?? null) : null,
-            'objectShortName'  => $deal['ufCrm13OSname'] ?? '',
+            'objectShortName'  => $deal['ufCrm8OSname'] ?? '',
             'indicators'       => $indicators,
             'lagDays'          => $isEarly ? null : $worstLagDays,
             'milestoneCounts'  => $isEarly ? null : dashboardOrderedStageCounts($dealMilestoneCounts, DASHBOARD_MILESTONE_STAGES),
@@ -453,7 +467,7 @@ function fetchDashboardData(B24 $b24, string $preset = 'active'): array {
         ];
 
         $kpi['activeCount']++;
-        $kpi['totalCost'] += $deal['ufCrm13OCost'] ?? 0.0;
+        $kpi['totalCost'] += $deal['ufCrm8OCost'] ?? 0.0;
         if (in_array('broken_schedule', $indicators, true))  $kpi['brokenScheduleCount']++;
         if (in_array('awaiting_payment', $indicators, true)) $kpi['awaitingPaymentCount']++;
     }

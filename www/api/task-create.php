@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 /**
  * Создание задачи по кнопке 🎯 в Пульте руководителя. Всегда привязывается
- * к Сделке (entityTypeId 1050), независимо от того, на каком уровне
- * аккордеона (Сделка/Этап/Модуль) нажата кнопка — см.
- * docs/superpowers/specs/2026-07-14-sozdanie-zadachi-design.md.
+ * к Сделке (entityTypeId 1038 — клиент «АУП», портал ooordi.bitrix24.ru),
+ * независимо от того, на каком уровне аккордеона (Сделка/Этап/Модуль)
+ * нажата кнопка — см. docs/prev-project/superpowers/specs/2026-07-14-sozdanie-zadachi-design.md
+ * (спека первого проекта — дизайн тот же, сущность другая).
  */
 
 define('APP_ROOT', dirname(__DIR__));
@@ -14,14 +15,14 @@ require_once APP_ROOT . '/api/store.php';
 require_once APP_ROOT . '/api/b24.php';
 require_once APP_ROOT . '/api/session.php';
 
-const TASK_CREATE_DEAL_ENTITY_TYPE_ID = 1050;
-const TASK_CREATE_OBJECT_NAME_FIELD   = 'UF_AUTO_824402759720';
+const TASK_CREATE_DEAL_ENTITY_TYPE_ID = 1038;
+const TASK_CREATE_OBJECT_NAME_FIELD   = 'UF_TASK_OBJ_NAME';
 const TASK_CREATE_TAG                 = 'Задача из пульта';
 
 /**
  * Привязка задачи к элементу CRM для смарт-процессов: PREFIX = 'T' + hex(entityTypeId).
  * См. /home/deploy/refs/b24-rest-docs/api-reference/crm/data-types.md#crm-binding-format.
- * Для Сделки (entityTypeId=1050): dechex(1050) = '41a' → 'T41a_{id}'.
+ * Для Сделки (entityTypeId=1038): dechex(1038) = '40e' → 'T40e_{id}'.
  */
 function taskCreateCrmBinding(int $entityTypeId, int $id): string {
     return 'T' . dechex($entityTypeId) . '_' . $id;

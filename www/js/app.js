@@ -2,18 +2,19 @@
 // (fetchDashboardData) отдаёт через www/api/dashboard.php дерево
 // сделка → этапы → модули с готовыми агрегатами. Раскрытие строк —
 // чистый рендер уже загруженного дерева, без новых REST-вызовов.
-// См. docs/superpowers/specs/2026-07-13-pult-rukovoditelya-design.md.
+// См. docs/prev-project/superpowers/specs/2026-07-13-pult-rukovoditelya-design.md
+// (спека первого проекта — дизайн тот же, сущности другие, клиент «АУП»).
 
 (function () {
   'use strict';
 
-  var ENTITY_TYPE_ID = { DEAL: 1050, MILESTONE: 1054, MODULE: 1062 };
+  var ENTITY_TYPE_ID = { DEAL: 1038, MILESTONE: 1042, MODULE: 1050 };
 
   var DEAL_STAGES = [
     { code: 'NEW',         order: 1, name: 'Подписание' },
-    { code: 'UC_WRET3K',   order: 2, name: 'Авансирование' },
+    { code: 'PREPARATION', order: 2, name: 'Авансирование' },
     { code: 'CLIENT',      order: 3, name: 'Работа' },
-    { code: 'PREPARATION', order: 4, name: 'Закрытие' },
+    { code: 'UC_MVRPFS',   order: 4, name: 'Закрытие' },
     { code: 'SUCCESS',     order: 5, name: 'Завершено' },
     { code: 'FAIL',        order: 6, name: 'Разрыв' },
   ];
