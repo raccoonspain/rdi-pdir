@@ -40,7 +40,7 @@ ssum: Описание проекта — что это и зачем
 |----------|----------|
 | Хостинг | VPS rub24.blackboxbegin.space (45.91.55.178), slug: rdi-pdir |
 | Прод URL | https://rub24.blackboxbegin.space/rdi-pdir/ |
-| Скоупы Б24 | crm, user, placement |
+| Скоупы Б24 | crm, user, placement, task |
 | Плейсменты | LEFT_MENU (дефолт) |
 | Cron | не нужен |
 | Особенности | UF-коды полей ap-pdir переиспользовать нельзя — переснять живыми REST-вызовами (`crm.item.fields`) под новый портал; черновой бизнес-контекст — в `/source/RDI *.md` |

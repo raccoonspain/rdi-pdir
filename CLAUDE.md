@@ -138,7 +138,8 @@ ssum: "**Контекст 1го чтения**"
 **Cron:** не нужен
 **Прод URL:** https://rub24.blackboxbegin.space/rdi-pdir/
 **Slug / хостинг:** rdi-pdir на rub24.blackboxbegin.space (VPS 45.91.55.178)
-**Скоупы Б24:** crm, user, placement (минимум; уточнить по факту новых запросов)
+**Скоупы Б24:** crm, user, placement, task (task добавлен 2026-07-22 —
+кнопка создания задачи в Пульте требует `tasks.task.add`)
 
 ## ДОКУМЕНТАЦИЯ — ПРОВЕРЯЙ КОГДА ЧТО-ТО НЕ РАБОТАЕТ
 
