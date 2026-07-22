@@ -1,0 +1,8 @@
+www/env.php
+www/data/
+.DS_Store
+*.log
+.claude/*
+!.claude/commands/
+!.claude/skills/
+.superpowers/

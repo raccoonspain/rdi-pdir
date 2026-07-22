@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Пульт руководителя</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="//api.bitrix24.com/api/v1/"></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Пульт руководителя</h1>
+      <p class="muted">Сделка → Этап → Модуль. Сроки и ключевые показатели по каждому объекту без погружения в детали.</p>
+    </header>
+
+    <main>
+      <div id="error-banner" class="error-banner" hidden>
+        <span id="error-message"></span>
+        <button id="retry-btn" type="button">Повторить</button>
+      </div>
+
+      <div class="handle-frame">
+        <span class="corner-handle tl" aria-hidden="true"></span>
+        <span class="corner-handle tr" aria-hidden="true"></span>
+        <span class="corner-handle bl" aria-hidden="true"></span>
+        <span class="corner-handle br" aria-hidden="true"></span>
+        <section class="kpi-row" id="kpi-row">
+          <div class="kpi-tile">
+            <div class="kpi-value" id="kpi-count">—</div>
+            <div class="kpi-label">Активных сделок</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-value" id="kpi-cost">—</div>
+            <div class="kpi-label">Сумма контрактов</div>
+          </div>
+          <div class="kpi-tile kpi-red">
+            <div class="kpi-value"><span id="kpi-broken">—</span> <span class="kpi-value-sub" id="kpi-broken-stages"></span></div>
+            <div class="kpi-label">Сделок (этапов) со срывом графика</div>
+          </div>
+          <div class="kpi-tile kpi-yellow">
+            <div class="kpi-value"><span id="kpi-awaiting">—</span> <span class="kpi-value-sub" id="kpi-awaiting-stages"></span></div>
+            <div class="kpi-label">Сделок (этапов) ожидают оплаты</div>
+          </div>
+        </section>
+      </div>
+
+      <section class="toolbar">
+        <input type="text" id="search-code" class="search-input" placeholder="Код…" autocomplete="off">
+        <input type="text" id="search-title" class="search-input" placeholder="Название…" autocomplete="off">
+        <select id="filter-customer" class="search-input" data-empty-label="Заказчик (все)"></select>
+        <select id="filter-assignee" class="search-input" data-empty-label="Ответственный (все)"></select>
+        <div class="preset-group" id="preset-group">
+          <button type="button" class="preset-btn" data-preset="active">Активные</button>
+          <button type="button" class="preset-btn" data-preset="all">Все</button>
+          <button type="button" class="preset-btn" data-preset="closed">Только завершённые</button>
+        </div>
+      </section>
+
+      <section class="stage-checks" id="stage-checks"></section>
+
+      <div class="handle-frame">
+        <span class="corner-handle tl" aria-hidden="true"></span>
+        <span class="corner-handle tr" aria-hidden="true"></span>
+        <span class="corner-handle bl" aria-hidden="true"></span>
+        <span class="corner-handle br" aria-hidden="true"></span>
+        <section class="card table-card">
+          <div id="loading" class="muted">Загрузка…</div>
+          <div id="empty-state" class="muted" hidden>Нет сделок по текущим фильтрам.</div>
+          <table id="deals-table" hidden>
+            <thead>
+              <tr>
+                <th class="col-expand"></th>
+                <th class="sortable" data-sort="code">Код</th>
+                <th>Название</th>
+                <th>Заказчик</th>
+                <th>Ответственный</th>
+                <th class="sortable" data-sort="stage">Стадия</th>
+                <th class="num">Цена</th>
+                <th class="num">Остаток</th>
+                <th>Индикаторы</th>
+                <th>Этапы</th>
+                <th>Модули</th>
+                <th class="num">Отставание</th>
+              </tr>
+            </thead>
+            <tbody id="deals-tbody"></tbody>
+          </table>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="task-modal-overlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <h2 id="task-modal-title">Создать задачу</h2>
+      <form id="task-modal-form">
+        <div class="modal-field">
+          <label for="task-title">Название</label>
+          <input type="text" id="task-title" required autocomplete="off">
+        </div>
+        <div class="modal-field">
+          <label for="task-description">Описание</label>
+          <textarea id="task-description"></textarea>
+        </div>
+        <div class="modal-field">
+          <label for="task-responsible">Исполнитель</label>
+          <select id="task-responsible" required></select>
+        </div>
+        <div class="modal-field">
+          <label for="task-deadline">Срок</label>
+          <input type="date" id="task-deadline">
+        </div>
+        <div id="task-modal-error" class="modal-error" hidden></div>
+        <div class="modal-actions">
+          <button type="button" id="task-modal-cancel" class="btn-secondary">Отмена</button>
+          <button type="submit" id="task-modal-submit" class="btn-primary">Создать</button>
+        </div>
+      </form>
+      <div id="task-modal-success" class="modal-success" hidden>
+        <p>Задача создана.</p>
+        <div class="modal-actions">
+          <a href="#" id="task-modal-open-link" class="btn-primary">Открыть в Битрикс24</a>
+          <button type="button" id="task-modal-close" class="btn-secondary">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

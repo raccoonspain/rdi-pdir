@@ -1,0 +1,428 @@
+:root {
+  --ink: #17181a;          /* чёрные обводки карточек/заголовков — вместо мягкого серого */
+  --bg: #efece3;            /* тёплая бумага под grain-текстурой */
+  --card-bg: #faf9f4;
+  --border: #d8d4c8;
+  --text: #24262a;
+  --muted: #6b6f76;
+  --accent: #2f5fdb;        /* яркий синий-акцент, как у Bugster */
+  --ok: #1e6b1e;
+  --red: #d1453b;
+  --red-bg: #fdecea;
+  --yellow: #b7791f;
+  --yellow-bg: #fff8e6;
+  --row-hover: #f1eee3;
+  --handle-fill: #e9f5b0;   /* пастельно-лаймовые «хендлы» по углам рамок */
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+/* Зернистая бумажная текстура (SVG feTurbulence, инлайн — без внешних запросов). */
+body {
+  margin: 0;
+  font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+  color: var(--text);
+  line-height: 1.5;
+  background-color: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+#app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+header h1 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+
+.muted { color: var(--muted); margin-top: 0; }
+
+main {
+  display: grid;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 20px;
+}
+
+code {
+  background: #f0f3f6;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.ok { color: var(--ok); }
+.muted-tag { color: var(--muted); }
+
+/* ── рамка с «хендлами» по углам (Bugster-style bordered box) ───────── */
+
+.handle-frame { position: relative; }
+
+.corner-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--handle-fill);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  z-index: 2;
+}
+.corner-handle.tl { top: -6px; left: -6px; }
+.corner-handle.tr { top: -6px; right: -6px; }
+.corner-handle.bl { bottom: -6px; left: -6px; }
+.corner-handle.br { bottom: -6px; right: -6px; }
+
+/* ── error banner ─────────────────────────────────────────────── */
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--red-bg);
+  border: 1.5px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+/* `display` в правиле выше перебивает UA-стиль `[hidden]{display:none}`
+   (одинаковая специфичность, наше правило позже в каскаде) — без этого
+   баннер виден даже с атрибутом hidden. */
+.error-banner[hidden] { display: none; }
+
+.error-banner button {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border: 1.5px solid var(--red);
+  background: #fff;
+  color: var(--red);
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+.error-banner button:hover { background: var(--red); color: #fff; }
+
+/* ── KPI ───────────────────────────────────────────────────────── */
+/* Единая рамка на все 4 плашки, с разделителями между колонками —
+   как «10x / <5min / Zero» на bugster.dev, а не 4 отдельные карточки. */
+
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--card-bg);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.kpi-tile {
+  flex: 1 1 180px;
+  padding: 16px 20px;
+  border-left: 1px solid var(--border);
+}
+.kpi-tile:first-child { border-left: none; }
+
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.kpi-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.kpi-tile.kpi-red .kpi-value { color: var(--red); }
+.kpi-tile.kpi-yellow .kpi-value { color: var(--yellow); }
+
+.kpi-value-sub {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── toolbar / filters ────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  min-width: 180px;
+  outline: none;
+  background: var(--card-bg);
+  color: var(--text);
+}
+.search-input:focus { border-color: var(--accent); }
+
+.preset-group { display: flex; gap: 6px; margin-left: auto; }
+
+.preset-btn {
+  padding: 7px 14px;
+  border: 1.5px solid var(--ink);
+  background: var(--card-bg);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--text);
+}
+.preset-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stage-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.stage-checks label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* ── table ─────────────────────────────────────────────────────── */
+
+/* Плашки стадий (чёрная/жёлтая/красная — цвета из воронки Б24, см. D-007)
+   слишком «выстреливают» на чистом белом — приглушаем полотно таблицы
+   зернистой бумажной текстурой вместо плоского #fff. */
+.table-card {
+  padding: 0;
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background-color: #f8f7f1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+
+thead th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+  color: var(--muted);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  background: #eeece2; /* сплошной фон поверх узора .table-card — заголовок не «в крапинку» */
+}
+
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--accent); }
+th.sortable .sort-arrow { margin-left: 3px; opacity: 0.6; }
+
+th.num, td.num { text-align: right; }
+th.col-expand, td.col-expand { width: 24px; }
+
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+tr.deal-row { cursor: pointer; }
+tr.deal-row:hover { background: var(--row-hover); }
+tr.deal-row.expanded { background: var(--row-hover); }
+
+.deal-code { font-family: var(--font-mono); }
+
+.expand-icon { display: inline-block; width: 14px; color: var(--muted); transition: transform .12s; }
+.expanded > .col-expand .expand-icon { transform: rotate(90deg); }
+
+.entity-link {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+  opacity: 0.6;
+  transition: opacity .12s;
+}
+.entity-link:hover { opacity: 1; text-decoration: underline; }
+
+/* Фон/текст — инлайновым style из JS (цвет стадии из crm.status.list, см. D-007).
+   Чёрная обводка — тот же «стикер»-приём, что и у карточек, цвет заливки не трогаем. */
+.stage-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.count-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 6px;
+  margin-right: 3px;
+  border: 1.5px solid var(--ink);
+  border-radius: 9px;
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-align: center;
+  cursor: default;
+}
+
+.lag-negative { color: var(--red); font-weight: 600; }
+.lag-positive { color: var(--muted); }
+
+.detail-row td {
+  padding: 0;
+  background-color: #f8f7f1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+.detail-wrap { padding: 10px 14px 14px 46px; }
+
+.sub-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  background-color: #f8f7f1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.sub-table--milestones,
+.sub-table--modules {
+  table-layout: fixed;
+}
+.sub-table--milestones th:nth-child(1), .sub-table--milestones td:nth-child(1) { width: 8%; }
+.sub-table--milestones th:nth-child(2), .sub-table--milestones td:nth-child(2) { width: 22%; }
+.sub-table--milestones th:nth-child(3), .sub-table--milestones td:nth-child(3) { width: 13%; }
+.sub-table--milestones th:nth-child(4), .sub-table--milestones td:nth-child(4) { width: 12%; }
+.sub-table--milestones th:nth-child(5), .sub-table--milestones td:nth-child(5) { width: 11%; }
+.sub-table--milestones th:nth-child(6), .sub-table--milestones td:nth-child(6) { width: 10%; }
+.sub-table--milestones th:nth-child(7), .sub-table--milestones td:nth-child(7) { width: 24%; }
+
+.sub-table--modules th:nth-child(1), .sub-table--modules td:nth-child(1) { width: 8%; }
+.sub-table--modules th:nth-child(2), .sub-table--modules td:nth-child(2) { width: 24%; }
+.sub-table--modules th:nth-child(3), .sub-table--modules td:nth-child(3) { width: 13%; }
+.sub-table--modules th:nth-child(4), .sub-table--modules td:nth-child(4) { width: 10%; }
+.sub-table--modules th:nth-child(5), .sub-table--modules td:nth-child(5) { width: 16%; }
+.sub-table--modules th:nth-child(6), .sub-table--modules td:nth-child(6) { width: 29%; }
+.sub-table th { background: #eeece2; padding: 6px 10px; font-size: 0.7rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.02em; color: var(--muted); text-align: left; }
+.sub-table th.num { text-align: right; }
+.sub-table td { padding: 7px 10px; border-top: 1px solid var(--border); }
+.sub-table tr.milestone-row { cursor: pointer; }
+.sub-table tr.milestone-row:hover { background: var(--row-hover); }
+.sub-table .module-wrap {
+  padding: 8px 8px 8px 34px;
+  background-color: #f8f7f1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+.sub-table + .sub-table, .module-wrap { margin-top: 6px; }
+
+/* ── модалка создания задачи ─────────────────────────────────────── */
+
+.task-btn {
+  display: inline-block;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: 4px;
+  font-size: 0.85em;
+  opacity: 0.65;
+  cursor: pointer;
+  transition: opacity .12s, transform .12s;
+}
+.task-btn:hover { opacity: 1; transform: scale(1.15); }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 24, 26, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+  background: var(--card-bg);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 24px;
+  width: 480px;
+  max-width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.modal h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+
+.modal-field { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+.modal-field label {
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.modal-field input, .modal-field select, .modal-field textarea {
+  padding: 8px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+}
+.modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--accent); }
+.modal-field textarea { min-height: 90px; resize: vertical; }
+
+.modal-error { color: var(--red); font-size: 0.85rem; margin-top: 12px; }
+.modal-success p { margin: 0 0 6px; color: var(--text); }
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+.btn-primary, .btn-secondary {
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-primary { background: var(--accent); border: 1.5px solid var(--accent); color: #fff; }
+.btn-secondary { background: var(--card-bg); border: 1.5px solid var(--ink); color: var(--text); }

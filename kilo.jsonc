@@ -1,0 +1,15 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+
+  // Модели по агентам (plan/code/debug/ask) сюда сознательно не заводим — настраиваются
+  // индивидуально под каждый проект через Settings UI (там же живут ключи провайдеров,
+  // которые в этом файле в принципе быть не могут).
+
+  "mcp": {
+    "bitrix24-docs": {
+      "type": "remote",
+      "url": "https://mcp-dev.bitrix24.tech/mcp",
+      "enabled": true
+    }
+  }
+}
