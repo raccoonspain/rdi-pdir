@@ -70,6 +70,12 @@
     taskModalCancel: document.getElementById('task-modal-cancel'),
     taskModalClose: document.getElementById('task-modal-close'),
     taskSubmitBtn: document.getElementById('task-modal-submit'),
+    accessBtn: document.getElementById('access-btn'),
+    accessModalOverlay: document.getElementById('access-modal-overlay'),
+    accessDeptList: document.getElementById('access-dept-list'),
+    accessModalError: document.getElementById('access-modal-error'),
+    accessModalCancel: document.getElementById('access-modal-cancel'),
+    accessModalSave: document.getElementById('access-modal-save'),
   };
 
   // ── формат ────────────────────────────────────────────────────────────
@@ -542,6 +548,58 @@
     closeTaskModal();
   });
 
+  // ── доступ по отделам (админ-настройка) ─────────────────────────────────
+
+  function openAccessModal() {
+    els.accessModalError.hidden = true;
+    els.accessDeptList.innerHTML = '<div class="muted">Загрузка…</div>';
+    els.accessModalOverlay.hidden = false;
+
+    window.api('GET', 'api/access.php').then(function (res) {
+      var allowed = new Set(res.allowed || []);
+      els.accessDeptList.innerHTML = '';
+      (res.departments || []).forEach(function (d) {
+        var row = document.createElement('div');
+        row.className = 'dept-check-row';
+        var id = 'dept-' + d.id;
+        row.innerHTML = '<input type="checkbox" id="' + id + '" value="' + d.id + '">'
+          + '<label for="' + id + '"></label>';
+        row.querySelector('label').textContent = d.name;
+        row.querySelector('input').checked = allowed.has(d.id);
+        els.accessDeptList.appendChild(row);
+      });
+    }).catch(function (err) {
+      els.accessDeptList.innerHTML = '';
+      els.accessModalError.textContent = err.message;
+      els.accessModalError.hidden = false;
+    });
+  }
+
+  function closeAccessModal() {
+    els.accessModalOverlay.hidden = true;
+  }
+
+  if (els.accessBtn) {
+    els.accessBtn.addEventListener('click', openAccessModal);
+    els.accessModalCancel.addEventListener('click', closeAccessModal);
+    els.accessModalSave.addEventListener('click', function () {
+      var ids = Array.prototype.map.call(
+        els.accessDeptList.querySelectorAll('input[type=checkbox]:checked'),
+        function (el) { return Number(el.value); }
+      );
+      els.accessModalSave.disabled = true;
+      els.accessModalError.hidden = true;
+      window.api('POST', 'api/access.php', { allowed: ids }).then(function () {
+        closeAccessModal();
+      }).catch(function (err) {
+        els.accessModalError.textContent = err.message;
+        els.accessModalError.hidden = false;
+      }).finally(function () {
+        els.accessModalSave.disabled = false;
+      });
+    });
+  }
+
   // ── helper для вызовов нашего бэкенда с прикреплённым session-token ────
   window.api = function (method, path, body) {
     return fetch(path, {
@@ -570,6 +628,9 @@
     }
     if (window.BX24 && BX24.getDomain) {
       state.domain = BX24.getDomain() || '';
+    }
+    if (window.APP_IS_ADMIN && els.accessBtn) {
+      els.accessBtn.hidden = false;
     }
     loadData();
   }

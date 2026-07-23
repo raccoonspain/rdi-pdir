@@ -97,6 +97,7 @@ ssum: "**Контекст 1го чтения**"
 ## КАК Я (КЛОД) РАБОТАЮ В ЭТОМ ПРОЕКТЕ
 
 - **Install-flow** уже зашит — двухфазно через `state` + `installFinish` + reload. См. [rule-b24-install-checklist](rules/rule-b24-install-checklist.md)
+- **Доступ к приложению** — не только admin-only, а ещё и по отделам (настраивается через UI, кнопка «Доступ»). См. [rule-b24-department-based-access](rules/rule-b24-department-based-access.md) — обязательный паттерн для всех проектов на этом движке, не только для этого
 - **Деплой** — `bash deploy.sh` (rsync `www/` → `deploy@45.91.55.178:/var/www/b24/rdi-pdir/` по SSH, VPS rub24.blackboxbegin.space). После деплоя перезагружать Caddy не нужно — PHP-FPM подхватывает файлы сразу.
 - **REST-вызовы** — через `$b24 = b24(); $b24->call('method', [...])`. Для CRM сущностей предпочитать `crm.item.*` с `entityTypeId`, не legacy `crm.<entity>.*`. См. [rule-crm-item-universal-api](rules/rule-crm-item-universal-api.md)
 - **REST-вызов для N id (foreach)** — НЕ `foreach ($ids as $id) { $b24->call(...) }`, а `$b24->batch([...])` чанками по 50. См. [rule-b24-rest-batch-not-loop](rules/rule-b24-rest-batch-not-loop.md) — на практике разница 24-34с → 2-3с

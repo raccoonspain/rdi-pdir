@@ -47,8 +47,10 @@ if ($method === 'POST' && $authId !== '') {
 
     // Save policy (общая для index.php и api/install.php — см. B24::maybeSaveTokensFromInstallPost).
     $referer = (string)($_SERVER['HTTP_REFERER'] ?? '');
+    $domainCandidate = (string)($post['DOMAIN'] ?? $b24->domain() ?? '');
+    $requesterIsAdmin = $domainCandidate !== '' && b24IsPortalAdmin($authId, $domainCandidate);
     try {
-        $b24->maybeSaveTokensFromInstallPost($post, $referer);
+        $b24->maybeSaveTokensFromInstallPost($post, $referer, $requesterIsAdmin);
     } catch (RuntimeException $e) {
         http_response_code(400); echo htmlspecialchars($e->getMessage()); exit;
     }
@@ -109,5 +111,6 @@ $html = preg_replace_callback(
     $html
 );
 
-$inject = '<script>window.APP_SESSION = ' . json_encode($session['token']) . ';</script>';
+$inject = '<script>window.APP_SESSION = ' . json_encode($session['token'])
+        . '; window.APP_IS_ADMIN = ' . json_encode(!empty($session['isAdmin'])) . ';</script>';
 echo str_replace('</head>', $inject . '</head>', $html);

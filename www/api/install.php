@@ -6,6 +6,7 @@ ini_set('display_errors', '0');
 require_once __DIR__ . '/../env.php';
 require_once __DIR__ . '/store.php';
 require_once __DIR__ . '/b24.php';
+require_once __DIR__ . '/session.php';
 
 function showResult(string $title, bool $ok, bool $shouldFinish, array $extra = []): void {
     header('Content-Type: text/html; charset=utf-8');
@@ -37,8 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $b24 = newB24();
 
+    $authId = (string)($body['AUTH_ID'] ?? '');
+    $domainCandidate = (string)($body['DOMAIN'] ?? $b24->domain() ?? '');
+    $requesterIsAdmin = $authId !== '' && $domainCandidate !== '' && b24IsPortalAdmin($authId, $domainCandidate);
+
     try {
-        $result = $b24->maybeSaveTokensFromInstallPost($body, (string)($_SERVER['HTTP_REFERER'] ?? ''));
+        $result = $b24->maybeSaveTokensFromInstallPost($body, (string)($_SERVER['HTTP_REFERER'] ?? ''), $requesterIsAdmin);
     } catch (RuntimeException $e) {
         showResult('Ошибка установки', false, false, ['error' => $e->getMessage()]);
         exit;

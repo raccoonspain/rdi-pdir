@@ -4,9 +4,21 @@ declare(strict_types=1);
 require_once __DIR__ . '/../env.php';
 require_once __DIR__ . '/store.php';
 require_once __DIR__ . '/b24.php';
+require_once __DIR__ . '/lib.php';
 
 const SESSION_TTL    = 28800;
 const SESSION_COOKIE = 'gsp_session';
+
+// Отделы, чьим сотрудникам разрешён доступ к приложению, если настройка
+// в settings.php (ключ allowedDepartments) ещё не сохранена явно —
+// см. api/access.php и D-0xx в docs/decisions.md.
+const DEFAULT_ALLOWED_DEPARTMENTS = [1, 2]; // Администрация, Управление проектами
+
+function allowedDepartmentIds(): array {
+    $s = loadSettings();
+    $ids = $s['allowedDepartments'] ?? DEFAULT_ALLOWED_DEPARTMENTS;
+    return array_values(array_map('intval', is_array($ids) ? $ids : DEFAULT_ALLOWED_DEPARTMENTS));
+}
 
 function loadSessions(): array {
     $d = storeRead(SESSIONS_FILE);
@@ -25,10 +37,30 @@ function cleanupSessions(): array {
     return $alive;
 }
 
+/** Живой (не по слепку на момент выдачи сессии) допуск: админ — всегда,
+ * иначе отдел сессии должен быть всё ещё в текущем allowedDepartmentIds() —
+ * снятая админом галочка отзывает доступ немедленно, не дожидаясь TTL. */
+function sessionIsCurrentlyAllowed(array $session): bool {
+    if (!empty($session['isAdmin'])) return true;
+    $depts = $session['departments'] ?? [];
+    return (bool)array_intersect($depts, allowedDepartmentIds());
+}
+
+function revokeSessionByToken(string $token): void {
+    $sessions = loadSessions();
+    $filtered = array_values(array_filter($sessions, fn($s) => !hash_equals((string)$s['token'], $token)));
+    if (count($filtered) !== count($sessions)) saveSessions($filtered);
+}
+
 function findSessionByToken(string $token): ?array {
     if ($token === '') return null;
     foreach (cleanupSessions() as $s) {
-        if (hash_equals((string)$s['token'], $token)) return $s;
+        if (!hash_equals((string)$s['token'], $token)) continue;
+        if (!sessionIsCurrentlyAllowed($s)) {
+            revokeSessionByToken($token);
+            return null;
+        }
+        return $s;
     }
     return null;
 }
@@ -45,13 +77,15 @@ function setSessionCookie(string $token, int $expires): void {
     ]);
 }
 
-function createSession(?string $userId = null): array {
+function createSession(?string $userId = null, bool $isAdmin = false, array $departments = []): array {
     $token = bin2hex(random_bytes(16));
     $session = [
-        'token'     => $token,
-        'userId'    => $userId,
-        'createdAt' => time(),
-        'expiresAt' => time() + SESSION_TTL,
+        'token'       => $token,
+        'userId'      => $userId,
+        'isAdmin'     => $isAdmin,
+        'departments' => $departments,
+        'createdAt'   => time(),
+        'expiresAt'   => time() + SESSION_TTL,
     ];
     $sessions = cleanupSessions();
     $sessions[] = $session;
@@ -112,13 +146,22 @@ function tryCreateSessionFromB24Post(): ?array {
                  && strpos($referer, rtrim(APP_URL, '/') . '/') === 0;
     if (!$isB24Ref && !$isSelfRef) return null;
 
-    // Admin-gate: only-admin доступ к приложению.
-    if ($authId === '' || !b24IsPortalAdmin($authId, $stored)) {
+    // Access-gate: администраторам — всегда, остальным — если их отдел
+    // (UF_DEPARTMENT) есть в списке allowedDepartmentIds() (настраивается
+    // через api/access.php, см. docs/decisions.md).
+    if ($authId === '') {
+        $GLOBALS['__session_denial_reason'] = 'not_admin';
+        return null;
+    }
+    $isAdmin = b24IsPortalAdmin($authId, $stored);
+    $info    = b24CurrentUserInfo($authId, $stored);
+    $inAllowedDept = $info && array_intersect($info['departments'], allowedDepartmentIds());
+    if (!$isAdmin && !$inAllowedDept) {
         $GLOBALS['__session_denial_reason'] = 'not_admin';
         return null;
     }
 
-    return createSession(resolveUserIdFromAuth($authId, $stored));
+    return createSession($info['id'] ?? null, $isAdmin, $info['departments'] ?? []);
 }
 
 function findSessionFromCookie(): ?array {
@@ -138,6 +181,18 @@ function requireSession(): array {
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'Доступ только из Bitrix24. Открой приложение в левом меню портала.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    return $session;
+}
+
+/** Для админ-эндпоинтов (настройка доступа и т.п.): требует сессию с isAdmin=true. */
+function requireAdminSession(): array {
+    $session = requireSession();
+    if (empty($session['isAdmin'])) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Доступно только администраторам портала.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
     return $session;

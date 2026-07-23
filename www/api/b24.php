@@ -101,17 +101,25 @@ final class B24 {
      * и в index.php (основной handler), и в api/install.php (alternative) —
      * не разводить логику по двум местам. KB: rules/b24-local-app-tokens-save-only-on-install.md.
      *
+     * $requesterIsAdmin гейтит именно ветку isAccessExpired(): с тех пор как
+     * не-админы тоже могут открывать приложение (доступ по отделам, см.
+     * session.php), обычный сотрудник, открывший приложение в момент
+     * истечения access_token, иначе перехватил бы общий REST-токен на себя —
+     * все вызовы пошли бы под его (более слабыми) правами в CRM. isFirst/
+     * isFormal не гейтятся — первая установка и ONAPPINSTALL по определению
+     * инициируются админом на стороне Б24.
+     *
      * Бросает RuntimeException из saveTokensFromInstall — обработка на вызывающем.
      *
      * @return array{saved: bool, isFirst: bool}
      */
-    public function maybeSaveTokensFromInstallPost(array $post, ?string $referer = null): array {
+    public function maybeSaveTokensFromInstallPost(array $post, ?string $referer = null, bool $requesterIsAdmin = false): array {
         if (!is_dir(DATA_ROOT)) @mkdir(DATA_ROOT, 0700, true);
 
         $isFirst  = !$this->hasTokens();
         $isFormal = ($post['INSTALL'] ?? '') === 'Y' || ($post['event'] ?? '') === 'ONAPPINSTALL';
         $saved = false;
-        if ($isFirst || $isFormal || $this->isAccessExpired()) {
+        if ($isFirst || $isFormal || ($this->isAccessExpired() && $requesterIsAdmin)) {
             $this->saveTokensFromInstall($post, $referer);
             $saved = true;
         }
@@ -224,8 +232,8 @@ function b24Portal(): ?string {
     return (is_string($d) && $d !== '') ? $d : null;
 }
 
-/** Резолв userId по AUTH_ID через REST user.current. */
-function resolveUserIdFromAuth(string $authId, string $domain): ?string {
+/** ID + отделы (UF_DEPARTMENT) текущего пользователя по AUTH_ID через REST user.current. */
+function b24CurrentUserInfo(string $authId, string $domain): ?array {
     if ($authId === '' || $domain === '') return null;
     $url = 'https://' . $domain . '/rest/user.current.json?auth=' . urlencode($authId);
     $ch = curl_init($url);
@@ -237,8 +245,18 @@ function resolveUserIdFromAuth(string $authId, string $domain): ?string {
     $resp = curl_exec($ch);
     if ($resp === false) return null;
     $data = json_decode((string)$resp, true);
-    $id = $data['result']['ID'] ?? null;
-    return $id ? (string)$id : null;
+    $result = $data['result'] ?? null;
+    if (!is_array($result) || empty($result['ID'])) return null;
+    $depts = $result['UF_DEPARTMENT'] ?? [];
+    return [
+        'id'          => (string)$result['ID'],
+        'departments' => is_array($depts) ? array_map('intval', $depts) : [],
+    ];
+}
+
+/** Резолв userId по AUTH_ID через REST user.current. */
+function resolveUserIdFromAuth(string $authId, string $domain): ?string {
+    return b24CurrentUserInfo($authId, $domain)['id'] ?? null;
 }
 
 function renderInstallFinishPage(): void {

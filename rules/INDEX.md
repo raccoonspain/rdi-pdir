@@ -21,3 +21,4 @@
 | [rule-b24-rest-batch-not-loop](rule-b24-rest-batch-not-loop.md) | REST-вызовы для N id — через `batch()`, не `foreach` с `call()`: на ~85 записях разница 24-34с → 2-3с |
 | [rule-crm-task-binding-smart-process-hex-prefix](rule-crm-task-binding-smart-process-hex-prefix.md) | Привязка задачи (`UF_CRM_TASK`) к смарт-процессу — префикс `T{hex(entityTypeId)}`, не буквенный код из общей таблицы |
 | [rule-b24-scope-add-needs-token-refresh](rule-b24-scope-add-needs-token-refresh.md) | Добавил scope в карточку local-app — `access_token` не обновляется сам, нужен форс `grant_type=refresh_token` |
+| [rule-b24-department-based-access](rule-b24-department-based-access.md) | Доступ к приложению всегда по отделам, не только admin-only — закладывать с первого коммита, не после первого не-админа |

@@ -10,8 +10,13 @@
 <body>
   <div id="app">
     <header>
-      <h1>Пульт руководителя</h1>
-      <p class="muted">Сделка → Этап → Модуль. Сроки и ключевые показатели по каждому объекту без погружения в детали.</p>
+      <div class="header-row">
+        <div>
+          <h1>Пульт руководителя</h1>
+          <p class="muted">Сделка → Этап → Модуль. Сроки и ключевые показатели по каждому объекту без погружения в детали.</p>
+        </div>
+        <button type="button" id="access-btn" class="btn-secondary" hidden>Доступ</button>
+      </div>
     </header>
 
     <main>
@@ -123,6 +128,19 @@
           <a href="#" id="task-modal-open-link" class="btn-primary">Открыть в Битрикс24</a>
           <button type="button" id="task-modal-close" class="btn-secondary">Готово</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="access-modal-overlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="access-modal-title">
+      <h2 id="access-modal-title">Доступ к приложению</h2>
+      <p class="muted">Администраторы портала видят Пульт всегда. Отметь отделы, сотрудникам которых доступ нужен дополнительно.</p>
+      <div id="access-dept-list" class="dept-check-list"></div>
+      <div id="access-modal-error" class="modal-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" id="access-modal-cancel" class="btn-secondary">Отмена</button>
+        <button type="button" id="access-modal-save" class="btn-primary">Сохранить</button>
       </div>
     </div>
   </div>
